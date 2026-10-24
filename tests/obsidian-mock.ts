@@ -75,7 +75,11 @@ export class Plugin {
 }
 export class PluginSettingTab {
   containerEl: any = {};
+  updates = 0;
   constructor(public app: any, public plugin: any) {}
+  update() {
+    this.updates++;
+  }
 }
 export class Setting {}
 

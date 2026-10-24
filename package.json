@@ -1,6 +1,6 @@
 {
   "name": "open-mode-control",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Obsidian plugin: open existing notes in reading view and new notes in editing view.",
   "main": "main.js",
   "scripts": {

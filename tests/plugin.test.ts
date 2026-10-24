@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import Plugin_ from "../src/main";
 import { FakeApp, FakeLeaf, makeFile, setMockLanguage } from "./obsidian-mock";
+import { OpenModeSettingTab } from "../src/settingsTab";
 
 // Node has no `window`; the plugin only needs the timer functions from it.
 (globalThis as any).window = { setTimeout: globalThis.setTimeout.bind(globalThis), clearTimeout: globalThis.clearTimeout.bind(globalThis) };
@@ -228,6 +229,46 @@ const modeOf = (l: FakeLeaf) => l.state.mode as string;
     await tick();
     assert.equal(modeOf(tab), "preview");
     assert.equal(tab.state.source, true);
+  });
+
+  // ---- settings tab (declarative definitions) -------------------------------
+  await test("settings tab: controls read and write the plugin settings and save", async () => {
+    const { app, p } = await boot({ data: EN });
+    const tab: any = new OpenModeSettingTab(app as any, p);
+    const defs = tab.getSettingDefinitions();
+    const keys = defs.filter((d: any) => d.control).map((d: any) => d.control.key);
+    assert.deepEqual(keys, ["language", "existingMode", "newMode", "newFileWindowSec", "treatEmptyAsNew"]);
+    assert.equal(tab.getControlValue("existingMode"), "reading");
+    await tab.setControlValue("newMode", "source");
+    assert.equal(p.settings.newMode, "source");
+    assert.equal(p.__saved.newMode, "source");
+    await tab.setControlValue("newFileWindowSec", 30);
+    assert.equal(p.settings.newFileWindowSec, 30);
+    await tab.setControlValue("newFileWindowSec", 0);
+    await tab.setControlValue("newFileWindowSec", 9999);
+    await tab.setControlValue("newFileWindowSec", Number.NaN);
+    assert.equal(p.settings.newFileWindowSec, 30, "out-of-range values are ignored");
+    const before = tab.updates;
+    await tab.setControlValue("language", "fr");
+    assert.equal(p.settings.language, "fr");
+    assert.equal(tab.updates, before + 1, "language change redraws the page");
+  });
+  await test("settings tab: exception list add, delete, reorder", async () => {
+    const { app, p } = await boot({ data: { ...EN, exceptions: [{ type: "file", pattern: "A.md", mode: "source" }, { type: "folder", pattern: "B", mode: "live" }] } });
+    const tab: any = new OpenModeSettingTab(app as any, p);
+    const list = () => tab.getSettingDefinitions().find((d: any) => d.type === "list");
+    assert.equal(list().items.length, 2);
+    list().addItem.action();
+    await tick();
+    assert.equal(p.settings.exceptions.length, 3);
+    assert.equal(list().items.length, 3, "the list is built from the current rules");
+    list().onReorder(2, 0);
+    await tick();
+    assert.equal(p.settings.exceptions[0].pattern, "");
+    list().onDelete(0);
+    await tick();
+    assert.deepEqual(p.settings.exceptions.map((r: any) => r.pattern), ["A.md", "B"]);
+    assert.equal(p.__saved.exceptions.length, 2);
   });
 
   console.log(`\n${passed} passed, ${failed} failed`);
