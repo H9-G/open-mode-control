@@ -1,0 +1,9 @@
+{
+  "id": "open-mode-control",
+  "name": "Open Mode Control",
+  "version": "1.0.0",
+  "minAppVersion": "1.8.7",
+  "description": "Open existing notes in reading view and new notes in editing view. Choose the mode for each, and add exceptions for specific files, folders or patterns. The settings are available in multiple languages.",
+  "author": "H9-",
+  "isDesktopOnly": false
+}
